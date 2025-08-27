@@ -13,14 +13,17 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import { Post } from "@/types";
 import { useModal } from "@/contexts/ModalContext";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 interface PostCardProps {
   post: Post;
   onUpdate: (id: number, data: { title?: string; body?: string }) => void;
   onDelete: (id: number) => void;
+  addRequestToQueue: (request: { type: "create" | "update" | "delete"; data: unknown }) => void;
 }
 
-export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
+export function PostCard({ post, onUpdate, onDelete, addRequestToQueue }: PostCardProps) {
+  const isOnline = useOnlineStatus();
   const { setOnConfirm, onConfirmOpen, onConfirmClose } = useModal();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(post.title);
@@ -29,6 +32,18 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
 
   const handleUpdate = () => {
     if (editedTitle === post.title && editedBody === post.body) {
+      setIsEditing(false);
+      return;
+    }
+
+    const updatedData = {
+      id: post.id,
+      title: editedTitle,
+      body: editedBody,
+    };
+
+    if (!isOnline) {
+      addRequestToQueue({ type: 'update', data: updatedData });
       setIsEditing(false);
       return;
     }
@@ -117,7 +132,13 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
             <IconButton onClick={() => setIsEditing(true)}>
               <Edit />
             </IconButton>
-            <IconButton onClick={() => onDelete(post.id)}>
+            <IconButton onClick={() => {
+              if (!isOnline) {
+                addRequestToQueue({ type: 'delete', data: post.id });
+                return;
+              }
+              onDelete(post.id);
+            }}>
               <Delete />
             </IconButton>
           </>

@@ -1,8 +1,9 @@
-import { useQuery, useMutation, useQueryClient, onlineManager } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Post } from "@/types";
 import { apiClient } from "@/lib/axios";
 import { API_ENDPOINTS } from "@/constants";
 import { useAppContext } from "@/contexts/AppContext";
+import { useOfflineQueue } from "./useOfflineQueue";
 
 const fetchPosts = async (): Promise<Post[]> => {
   const response = await apiClient.get(API_ENDPOINTS.POSTS);
@@ -37,17 +38,28 @@ export function usePosts() {
   const { data, isLoading, error } = useQuery<Post[], Error>({
     queryKey: ["posts"],
     queryFn: fetchPosts,
-    enabled: onlineManager.isOnline(),
   });
 
   const createPostMutation = useMutation({
     mutationFn: createPost,
+    onMutate: async (newPost) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      const previousPosts = queryClient.getQueryData<Post[]>(["posts"]);
+      queryClient.setQueryData<Post[]>(["posts"], (old) => [...(old || []), { ...newPost, id: Date.now() }]);
+      return { previousPosts };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       showNotification("Post created successfully", "success");
     },
-    onError: () => {
+    onError: (err, newPost, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["posts"], context.previousPosts);
+      }
       showNotification("Failed to create post", "error");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 
@@ -102,6 +114,12 @@ export function usePosts() {
     },
   });
 
+  const { addRequestToQueue } = useOfflineQueue({
+    createPost: (post) => Promise.resolve(createPostMutation.mutate(post)),
+    updatePost: (post) => Promise.resolve(updatePostMutation.mutate(post)),
+    deletePost: (id) => Promise.resolve(deletePostMutation.mutate(id)),
+  });
+
   return {
     posts: data || [],
     isLoading,
@@ -109,5 +127,6 @@ export function usePosts() {
     createPost: createPostMutation.mutate,
     updatePost: updatePostMutation.mutate,
     deletePost: deletePostMutation.mutate,
+    addRequestToQueue,
   };
 }

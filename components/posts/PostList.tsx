@@ -18,11 +18,15 @@ import { PostSearch } from "./PostSearch";
 import { PostPagination } from "./PostPagination";
 import Fuse from "fuse.js";
 import { FUSE_THRESHOLD, ITEMS_PER_PAGE } from "@/constants";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { getQueuedRequests } from "@/lib/offline";
 
 export function PostList() {
-  const { posts, updatePost, deletePost, isLoading, error } = usePosts();
+  const { posts, updatePost, deletePost, isLoading, error, addRequestToQueue } = usePosts();
   const { setOnConfirm, onConfirmOpen, onConfirmClose } = useModal();
   const [searchQuery, setSearchQuery] = useState("");
+  const isOnline = useOnlineStatus();
+  const queuedRequests = getQueuedRequests();
   const [currentPage, setCurrentPage] = useState(1);
 
   const fuse = useMemo(() => {
@@ -124,6 +128,15 @@ export function PostList() {
 
       <PostSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
+      {!isOnline && (
+        <Box sx={{ my: 2, p: 2, bgcolor: "warning.main", color: "white", borderRadius: 1 }}>
+          <Typography>
+            You are currently offline. Changes will be synced when you are back online.
+            Queued items: {queuedRequests.length}
+          </Typography>
+        </Box>
+      )}
+
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
         {paginatedPosts.map((post) => (
           <Box key={post.id} sx={{ width: "calc(33.333% - 16px)" }}>
@@ -131,6 +144,7 @@ export function PostList() {
               post={post}
               onUpdate={handleUpdate}
               onDelete={() => handleDeletePostClick(post)}
+              addRequestToQueue={addRequestToQueue}
             />
           </Box>
         ))}
