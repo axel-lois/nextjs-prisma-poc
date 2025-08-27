@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import {
   Container,
   Typography,
@@ -16,35 +15,27 @@ import { useModal } from "@/contexts/ModalContext";
 import { Post } from "@/types";
 import { PostSearch } from "./PostSearch";
 import { PostPagination } from "./PostPagination";
-import { ITEMS_PER_PAGE } from "@/constants";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { getQueuedRequests } from "@/lib/offline";
 import { useIsRestoring } from "@tanstack/react-query";
-import { searchPosts } from "@/lib/search";
+import { usePostFilters } from "@/hooks/usePostFilters";
 
 export function PostList() {
   const { posts, updatePost, deletePost, isLoading, error, addRequestToQueue } =
     usePosts();
   const { openModal, closeModal, setOnConfirm } = useModal();
-  const [searchQuery, setSearchQuery] = useState("");
   const isOnline = useOnlineStatus();
   const queuedRequests = getQueuedRequests();
-  const [currentPage, setCurrentPage] = useState(1);
   const isRestoring = useIsRestoring();
 
-  const filteredPosts = useMemo(() => {
-    return searchPosts(posts, searchQuery);
-  }, [posts, searchQuery]);
-
-  const totalPages = useMemo(() => {
-    return Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
-  }, [filteredPosts]);
-
-  const paginatedPosts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredPosts.slice(startIndex, endIndex);
-  }, [filteredPosts, currentPage]);
+  const {
+    searchQuery,
+    setSearchQuery,
+    currentPage,
+    setCurrentPage,
+    paginatedPosts,
+    totalPages,
+  } = usePostFilters(posts);
 
   // Handle delete post
   const handleDeletePostClick = (post: Post) => {
