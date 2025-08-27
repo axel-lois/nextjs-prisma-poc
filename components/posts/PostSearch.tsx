@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { TextField, Button } from '@mui/material';
-import { Box } from '@mui/system';
+import { TextField } from "@mui/material";
+import { Box } from "@mui/system";
 
 interface PostSearchProps {
   searchQuery: string;
@@ -10,20 +10,22 @@ interface PostSearchProps {
 
 export function PostSearch({ searchQuery, setSearchQuery }: PostSearchProps) {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mb: 4 }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 2,
+        mb: 4,
+      }}
+    >
       <TextField
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search by title, content, or author..."
         variant="outlined"
-        sx={{ width: '100%', maxWidth: 500 }}
+        sx={{ width: "100%", maxWidth: 500 }}
       />
-      <Button
-        variant="contained"
-        onClick={() => (window.location.href = '/posts/create')}
-      >
-        Add Post
-      </Button>
     </Box>
   );
 }

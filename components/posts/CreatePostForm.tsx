@@ -1,14 +1,26 @@
-'use client';
+"use client";
 
-import { Container, Typography, Box, TextField, Button, CircularProgress, Card, CardContent, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { useCreatePost } from '@/hooks/useCreatePost';
+import {
+  Container,
+  Typography,
+  Box,
+  TextField,
+  Button,
+  CircularProgress,
+  Card,
+  CardContent,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
+import { useCreatePost } from "@/hooks/useCreatePost";
 
-export default function CreatePostPage() {
+export function CreatePostForm() {
   const {
     users,
     isLoadingUsers,
     isSubmitting,
-    error,
     register,
     handleSubmit,
     errors,
@@ -18,7 +30,14 @@ export default function CreatePostPage() {
 
   if (isLoadingUsers) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -32,12 +51,12 @@ export default function CreatePostPage() {
             Create New Post
           </Typography>
           <form onSubmit={handleSubmit}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
                 label="Title"
                 variant="outlined"
                 fullWidth
-                {...register('title', { required: 'Title is required' })}
+                {...register("title", { required: "Title is required" })}
                 error={!!errors.title}
                 helperText={errors.title?.message}
               />
@@ -47,7 +66,7 @@ export default function CreatePostPage() {
                 fullWidth
                 multiline
                 rows={6}
-                {...register('body', { required: 'Body is required' })}
+                {...register("body", { required: "Body is required" })}
                 error={!!errors.body}
                 helperText={errors.body?.message}
               />
@@ -55,8 +74,10 @@ export default function CreatePostPage() {
                 <InputLabel>Author</InputLabel>
                 <Select
                   label="Author"
-                  value={watch('userId')}
-                  {...register('userId', { required: 'Please select an author' })}
+                  value={watch("userId")}
+                  {...register("userId", {
+                    required: "Please select an author",
+                  })}
                 >
                   {users.map((user) => (
                     <MenuItem key={user.id} value={user.id}>
@@ -65,15 +86,27 @@ export default function CreatePostPage() {
                   ))}
                 </Select>
               </FormControl>
-              {error && (
-                <Typography color="error">{error.message}</Typography>
-              )}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 2,
+                  mt: 2,
+                }}
+              >
                 <Button onClick={handleBack} disabled={isSubmitting}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="contained" disabled={isSubmitting}>
-                  {isSubmitting ? <CircularProgress size={24} /> : 'Create Post'}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    "Create Post"
+                  )}
                 </Button>
               </Box>
             </Box>

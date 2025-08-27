@@ -13,24 +13,43 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import { Post } from "@/types";
 import { useModal } from "@/contexts/ModalContext";
+import { useAppContext } from "@/contexts/AppContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { hasPendingAction } from "@/lib/offline";
 
 interface PostCardProps {
   post: Post;
   onUpdate: (id: number, data: { title?: string; body?: string }) => void;
   onDelete: (id: number) => void;
-  addRequestToQueue: (request: { type: "create" | "update" | "delete"; data: unknown }) => void;
+  addRequestToQueue: (request: {
+    type: "create" | "update" | "delete";
+    data: unknown;
+  }) => void;
 }
 
-export function PostCard({ post, onUpdate, onDelete, addRequestToQueue }: PostCardProps) {
+export function PostCard({
+  post,
+  onUpdate,
+  onDelete,
+  addRequestToQueue,
+}: PostCardProps) {
   const isOnline = useOnlineStatus();
-  const { setOnConfirm, onConfirmOpen, onConfirmClose } = useModal();
+  const { openModal, closeModal, setOnConfirm } = useModal();
+  const { showNotification } = useAppContext();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(post.title);
   const [editedBody, setEditedBody] = useState(post.body);
   const [isLoading] = useState(false);
 
   const handleUpdate = () => {
+    if (hasPendingAction(post.id)) {
+      showNotification(
+        "There is already a pending action for this post.",
+        "warning"
+      );
+      return;
+    }
+
     if (editedTitle === post.title && editedBody === post.body) {
       setIsEditing(false);
       return;
@@ -43,7 +62,7 @@ export function PostCard({ post, onUpdate, onDelete, addRequestToQueue }: PostCa
     };
 
     if (!isOnline) {
-      addRequestToQueue({ type: 'update', data: updatedData });
+      addRequestToQueue({ type: "update", data: updatedData });
       setIsEditing(false);
       return;
     }
@@ -54,9 +73,9 @@ export function PostCard({ post, onUpdate, onDelete, addRequestToQueue }: PostCa
         body: editedBody,
       });
       setIsEditing(false);
-      onConfirmClose();
+      closeModal();
     });
-    onConfirmOpen();
+    openModal("confirm");
   };
 
   const handleCancelEdit = () => {
@@ -132,13 +151,22 @@ export function PostCard({ post, onUpdate, onDelete, addRequestToQueue }: PostCa
             <IconButton onClick={() => setIsEditing(true)}>
               <Edit />
             </IconButton>
-            <IconButton onClick={() => {
-              if (!isOnline) {
-                addRequestToQueue({ type: 'delete', data: post.id });
-                return;
-              }
-              onDelete(post.id);
-            }}>
+            <IconButton
+              onClick={() => {
+                if (hasPendingAction(post.id)) {
+                  showNotification(
+                    "There is already a pending action for this post.",
+                    "warning"
+                  );
+                  return;
+                }
+                if (!isOnline) {
+                  addRequestToQueue({ type: "delete", data: post.id });
+                  return;
+                }
+                onDelete(post.id);
+              }}
+            >
               <Delete />
             </IconButton>
           </>

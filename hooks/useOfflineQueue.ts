@@ -2,57 +2,63 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useOnlineStatus } from './useOnlineStatus';
-import { getQueuedRequests, deleteQueuedRequest, queueRequest } from '@/lib/offline';
+import { getQueuedRequests, deleteQueuedRequest, queueRequest, isDuplicateRequest } from '@/lib/offline';
 import { QueuedRequest } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { Post } from '@/types';
+import { apiClient } from '@/lib/axios';
+import { API_ENDPOINTS } from '@/constants';
 
-interface OfflineQueueOptions {
-  createPost: (post: Omit<Post, 'id'>) => Promise<void>;
-  updatePost: (post: Partial<Post> & { id: number }) => Promise<void>;
-  deletePost: (id: number) => Promise<void>;
-}
-
-export function useOfflineQueue({ createPost, updatePost, deletePost }: OfflineQueueOptions) {
+export function useOfflineQueue() {
   const isOnline = useOnlineStatus();
   const { showNotification } = useAppContext();
   const [queuedRequests, setQueuedRequests] = useState<QueuedRequest[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     setQueuedRequests(getQueuedRequests());
   }, []);
 
   const processQueue = useCallback(async () => {
+    if (isProcessing) return;
+
     const requests = getQueuedRequests();
     if (requests.length === 0) return;
 
+    setIsProcessing(true);
     showNotification(`Syncing ${requests.length} offline changes...`, 'info');
 
     for (const req of requests) {
       try {
         if (req.type === 'create') {
-          await createPost(req.data as Omit<Post, 'id'>);
+          await apiClient.post(API_ENDPOINTS.POSTS, req.data);
         } else if (req.type === 'update') {
-          await updatePost(req.data as Partial<Post> & { id: number });
+          const { id, ...data } = req.data as Partial<Post> & { id: number };
+          await apiClient.patch(`${API_ENDPOINTS.POSTS}/${id}`, data);
         } else if (req.type === 'delete') {
-          await deletePost(req.data as number);
+          await apiClient.delete(`${API_ENDPOINTS.POSTS}/${req.data}`);
         }
         deleteQueuedRequest(req.id);
         setQueuedRequests(getQueuedRequests());
       } catch (error) {
         console.error('Failed to process queued request:', error);
-        showNotification(`Failed to sync change. Please try again.`, 'error');
+        showNotification(`Failed to sync change for request ${req.id}. It will be retried later.`, 'error');
       }
     }
-  }, [createPost, updatePost, deletePost, showNotification]);
+    setIsProcessing(false);
+  }, [showNotification, isProcessing]);
 
   useEffect(() => {
-    if (isOnline) {
+    if (isOnline && queuedRequests.length > 0) {
       processQueue();
     }
-  }, [isOnline, processQueue]);
+  }, [isOnline, processQueue, queuedRequests]);
 
   const addRequestToQueue = (request: Omit<QueuedRequest, 'id'>) => {
+    if (isDuplicateRequest(request)) {
+      showNotification('This action is already in the queue.', 'warning');
+      return;
+    }
     queueRequest(request);
     setQueuedRequests(getQueuedRequests());
     showNotification('Request queued. It will be processed when you are back online.', 'info');

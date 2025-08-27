@@ -114,11 +114,7 @@ export function usePosts() {
     },
   });
 
-  const { addRequestToQueue } = useOfflineQueue({
-    createPost: (post) => Promise.resolve(createPostMutation.mutate(post)),
-    updatePost: (post) => Promise.resolve(updatePostMutation.mutate(post)),
-    deletePost: (id) => Promise.resolve(deletePostMutation.mutate(id)),
-  });
+  const { addRequestToQueue } = useOfflineQueue();
 
   return {
     posts: data || [],

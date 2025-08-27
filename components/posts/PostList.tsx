@@ -22,8 +22,9 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { getQueuedRequests } from "@/lib/offline";
 
 export function PostList() {
-  const { posts, updatePost, deletePost, isLoading, error, addRequestToQueue } = usePosts();
-  const { setOnConfirm, onConfirmOpen, onConfirmClose } = useModal();
+  const { posts, updatePost, deletePost, isLoading, error, addRequestToQueue } =
+    usePosts();
+  const { openModal, closeModal, setOnConfirm } = useModal();
   const [searchQuery, setSearchQuery] = useState("");
   const isOnline = useOnlineStatus();
   const queuedRequests = getQueuedRequests();
@@ -58,9 +59,9 @@ export function PostList() {
   const handleDeletePostClick = (post: Post) => {
     setOnConfirm(() => () => {
       deletePost(post.id);
-      onConfirmClose();
+      closeModal();
     });
-    onConfirmOpen();
+    openModal("confirm");
   };
 
   // Handle update with modal sync
@@ -126,13 +127,33 @@ export function PostList() {
         </Typography>
       </Box>
 
-      <PostSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <PostSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <Button variant="contained" onClick={() => openModal("createPost")}>
+          Add Post
+        </Button>
+      </Box>
 
       {!isOnline && (
-        <Box sx={{ my: 2, p: 2, bgcolor: "warning.main", color: "white", borderRadius: 1 }}>
+        <Box
+          sx={{
+            my: 2,
+            p: 2,
+            bgcolor: "warning.main",
+            color: "white",
+            borderRadius: 1,
+          }}
+        >
           <Typography>
-            You are currently offline. Changes will be synced when you are back online.
-            Queued items: {queuedRequests.length}
+            You are currently offline. Changes will be synced when you are back
+            online. Queued items: {queuedRequests.length}
           </Typography>
         </Box>
       )}
