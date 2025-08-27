@@ -16,11 +16,11 @@ import { useModal } from "@/contexts/ModalContext";
 import { Post } from "@/types";
 import { PostSearch } from "./PostSearch";
 import { PostPagination } from "./PostPagination";
-import Fuse from "fuse.js";
-import { FUSE_THRESHOLD, ITEMS_PER_PAGE } from "@/constants";
+import { ITEMS_PER_PAGE } from "@/constants";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { getQueuedRequests } from "@/lib/offline";
 import { useIsRestoring } from "@tanstack/react-query";
+import { searchPosts } from "@/lib/search";
 
 export function PostList() {
   const { posts, updatePost, deletePost, isLoading, error, addRequestToQueue } =
@@ -32,20 +32,9 @@ export function PostList() {
   const [currentPage, setCurrentPage] = useState(1);
   const isRestoring = useIsRestoring();
 
-  const fuse = useMemo(() => {
-    return new Fuse(posts, {
-      keys: ["title", "body", "user.name"],
-      threshold: FUSE_THRESHOLD,
-      includeScore: true,
-    });
-  }, [posts]);
-
   const filteredPosts = useMemo(() => {
-    if (searchQuery.trim() === "") {
-      return posts;
-    }
-    return fuse.search(searchQuery).map((result) => result.item);
-  }, [searchQuery, posts, fuse]);
+    return searchPosts(posts, searchQuery);
+  }, [posts, searchQuery]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
@@ -135,7 +124,7 @@ export function PostList() {
           justifyContent: "center",
           alignItems: "center",
           mb: 4,
-          height: "50px"
+          height: "50px",
         }}
       >
         <PostSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
