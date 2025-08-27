@@ -15,8 +15,8 @@ export function PostSearch({ searchQuery, setSearchQuery }: PostSearchProps) {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        width: "100%",
         gap: 2,
-        mb: 4,
       }}
     >
       <TextField

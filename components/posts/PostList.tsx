@@ -132,13 +132,18 @@ export function PostList() {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "center",
-          mb: 2,
+          mb: 4,
+          height: "50px"
         }}
       >
         <PostSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        <Button variant="contained" onClick={() => openModal("createPost")}>
+        <Button
+          className="whitespace-nowrap h-full"
+          variant="contained"
+          onClick={() => openModal("createPost")}
+        >
           Add Post
         </Button>
       </Box>
