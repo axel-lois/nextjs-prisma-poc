@@ -14,6 +14,7 @@ export function useUsers() {
   const { data: users, isLoading: isLoadingUsers, error } = useQuery<User[], Error>({
     queryKey: ['users'],
     queryFn: fetchUsers,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   return { users: users || [], isLoadingUsers, error };

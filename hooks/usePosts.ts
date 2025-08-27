@@ -38,6 +38,7 @@ export function usePosts() {
   const { data, isLoading, error } = useQuery<Post[], Error>({
     queryKey: ["posts"],
     queryFn: fetchPosts,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const createPostMutation = useMutation({

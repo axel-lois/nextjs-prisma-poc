@@ -47,8 +47,19 @@ This is a full-stack Next.js application with Prisma ORM for managing posts and 
 - **TanStack Query**: For data fetching, caching, and state management.
 - **TypeScript**: For type safety and improved developer experience.
 
-### Offline Feature
-The application is designed to work offline. When the user is offline, all create, update, and delete operations are queued locally using localStorage. When the user comes back online, the queued operations are sent to the server.
+## Offline Support
+
+The application provides offline support for creating, updating, and deleting posts. This is achieved using a combination of a custom offline queue and TanStack Query's `persistQueryClient`.
+
+### Offline Queue
+
+The offline queue is implemented in `lib/offline.ts` and `hooks/useOfflineQueue.ts`. When the user is offline, any mutations (create, update, delete) are added to a queue in localStorage. When the user comes back online, the queue is processed and the mutations are sent to the server.
+
+### TanStack Query with Persistence
+
+TanStack Query is used to cache the data from the server. The `persistQueryClient` functionality is used to persist the query cache to localStorage. This allows the application to display the cached data when the user is offline.
+
+The query client is configured in `app/providers.tsx` with a `staleTime` of 1 hour and a `gcTime` of 24 hours. This means that the data will be considered fresh for 1 hour, and will be garbage collected after 24 hours.
 
 ### State Management
 - **TanStack Query**: Is the single source of truth for all server-state. It handles data fetching, caching, and synchronization.
