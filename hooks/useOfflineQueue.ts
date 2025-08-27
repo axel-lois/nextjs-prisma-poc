@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useOnlineStatus } from './useOnlineStatus';
 import { getQueuedRequests, deleteQueuedRequest, queueRequest, isDuplicateRequest } from '@/lib/offline';
 import { QueuedRequest } from '@/types';
-import { useAppContext } from '@/contexts/AppContext';
+import { useNotificationContext } from '@/contexts/NotificationContext';
 import { Post } from '@/types';
 import { apiClient } from '@/lib/axios';
 import { API_ENDPOINTS } from '@/constants';
 
 export function useOfflineQueue() {
   const isOnline = useOnlineStatus();
-  const { showNotification } = useAppContext();
+  const { showNotification } = useNotificationContext();
   const [queuedRequests, setQueuedRequests] = useState<QueuedRequest[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 

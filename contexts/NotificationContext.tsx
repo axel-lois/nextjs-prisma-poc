@@ -3,13 +3,13 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { Snackbar, Alert } from '@mui/material';
 
-interface AppContextProps {
+interface NotificationContextProps {
   showNotification: (message: string, severity: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-const AppContext = createContext<AppContextProps | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextProps | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notification, setNotification] = useState<{ message: string; severity: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   const showNotification = useCallback((message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
@@ -21,7 +21,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ showNotification }}>
+    <NotificationContext.Provider value={{ showNotification }}>
       {children}
       {notification && (
         <Snackbar open autoHideDuration={6000} onClose={handleCloseNotification}>
@@ -30,14 +30,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           </Alert>
         </Snackbar>
       )}
-    </AppContext.Provider>
+    </NotificationContext.Provider>
   );
 }
 
-export function useAppContext() {
-  const context = useContext(AppContext);
+export function useNotificationContext() {
+  const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('useNotificationContext must be used within an NotificationProvider');
   }
   return context;
 }

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Post } from "@/types";
 import { apiClient } from "@/lib/axios";
 import { API_ENDPOINTS } from "@/constants";
-import { useAppContext } from "@/contexts/AppContext";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 import { useOfflineQueue } from "./useOfflineQueue";
 
 const fetchPosts = async (): Promise<Post[]> => {
@@ -33,7 +33,7 @@ const deletePost = async (id: number): Promise<void> => {
 
 export function usePosts() {
   const queryClient = useQueryClient();
-  const { showNotification } = useAppContext();
+  const { showNotification } = useNotificationContext();
 
   const { data, isLoading, error } = useQuery<Post[], Error>({
     queryKey: ["posts"],

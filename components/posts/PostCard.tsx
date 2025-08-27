@@ -13,7 +13,7 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import { Post } from "@/types";
 import { useModal } from "@/contexts/ModalContext";
-import { useAppContext } from "@/contexts/AppContext";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { hasPendingAction } from "@/lib/offline";
 
@@ -35,7 +35,7 @@ export function PostCard({
 }: PostCardProps) {
   const isOnline = useOnlineStatus();
   const { openModal, closeModal, setOnConfirm } = useModal();
-  const { showNotification } = useAppContext();
+  const { showNotification } = useNotificationContext();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(post.title);
   const [editedBody, setEditedBody] = useState(post.body);

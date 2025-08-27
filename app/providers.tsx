@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
-import CssBaseline from '@mui/material/CssBaseline';
-import { AppProvider } from '@/contexts/AppContext';
-import { ModalProvider } from '@/contexts/ModalContext';
-import { PersistQueryClientProvider } from './PersistQueryClientProvider';
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
+import CssBaseline from "@mui/material/CssBaseline";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ModalProvider } from "@/contexts/ModalContext";
+import { PersistQueryClientProvider } from "./PersistQueryClientProvider";
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
   },
 });
 
@@ -30,9 +30,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <PersistQueryClientProvider queryClient={queryClient}>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <AppProvider>
+            <NotificationProvider>
               <ModalProvider>{children}</ModalProvider>
-            </AppProvider>
+            </NotificationProvider>
           </ThemeProvider>
         </PersistQueryClientProvider>
       </QueryClientProvider>
