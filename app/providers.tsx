@@ -2,12 +2,11 @@
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { persistQueryClient } from '@tanstack/react-query-persist-client';
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AppProvider } from '@/contexts/AppContext';
 import { ModalProvider } from '@/contexts/ModalContext';
+import { PersistQueryClientProvider } from './PersistQueryClientProvider';
 
 const theme = createTheme({
   palette: {
@@ -24,27 +23,18 @@ const queryClient = new QueryClient({
   },
 });
 
-if (typeof window !== 'undefined') {
-  const localStoragePersister = createSyncStoragePersister({
-    storage: window.localStorage,
-  });
-
-  persistQueryClient({
-    queryClient,
-    persister: localStoragePersister,
-  });
-}
-
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AppRouterCacheProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <AppProvider>
-            <ModalProvider>{children}</ModalProvider>
-          </AppProvider>
-        </ThemeProvider>
+        <PersistQueryClientProvider queryClient={queryClient}>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <AppProvider>
+              <ModalProvider>{children}</ModalProvider>
+            </AppProvider>
+          </ThemeProvider>
+        </PersistQueryClientProvider>
       </QueryClientProvider>
     </AppRouterCacheProvider>
   );

@@ -20,6 +20,7 @@ import Fuse from "fuse.js";
 import { FUSE_THRESHOLD, ITEMS_PER_PAGE } from "@/constants";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { getQueuedRequests } from "@/lib/offline";
+import { useIsRestoring } from "@tanstack/react-query";
 
 export function PostList() {
   const { posts, updatePost, deletePost, isLoading, error, addRequestToQueue } =
@@ -29,6 +30,7 @@ export function PostList() {
   const isOnline = useOnlineStatus();
   const queuedRequests = getQueuedRequests();
   const [currentPage, setCurrentPage] = useState(1);
+  const isRestoring = useIsRestoring();
 
   const fuse = useMemo(() => {
     return new Fuse(posts, {
@@ -72,7 +74,7 @@ export function PostList() {
     updatePost({ id, ...data });
   };
 
-  if (isLoading) {
+  if (isLoading || isRestoring) {
     return (
       <Box
         sx={{
