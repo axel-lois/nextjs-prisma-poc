@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useOnlineStatus } from './useOnlineStatus';
 import { getQueuedRequests, deleteQueuedRequest, queueRequest, isDuplicateRequest } from '@/lib/offline';
 import { QueuedRequest } from '@/types';
@@ -12,6 +13,7 @@ import { API_ENDPOINTS } from '@/constants';
 export function useOfflineQueue() {
   const isOnline = useOnlineStatus();
   const { showNotification } = useNotificationContext();
+  const queryClient = useQueryClient();
   const [queuedRequests, setQueuedRequests] = useState<QueuedRequest[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -28,6 +30,9 @@ export function useOfflineQueue() {
     setIsProcessing(true);
     showNotification(`Syncing ${requests.length} offline changes...`, 'info');
 
+    let successCount = 0;
+    let failureCount = 0;
+
     for (const req of requests) {
       try {
         if (req.type === 'create') {
@@ -40,13 +45,24 @@ export function useOfflineQueue() {
         }
         deleteQueuedRequest(req.id);
         setQueuedRequests(getQueuedRequests());
+        successCount++;
       } catch (error) {
         console.error('Failed to process queued request:', error);
-        showNotification(`Failed to sync change for request ${req.id}. It will be retried later.`, 'error');
+        failureCount++;
       }
     }
+
     setIsProcessing(false);
-  }, [showNotification, isProcessing]);
+    
+    // Show completion notification
+    if (successCount > 0) {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      showNotification(`Successfully synced ${successCount} changes!`, 'success');
+    }
+    if (failureCount > 0) {
+      showNotification(`Failed to sync ${failureCount} changes. They will be retried later.`, 'error');
+    }
+  }, [showNotification, isProcessing, queryClient]);
 
   useEffect(() => {
     if (isOnline && queuedRequests.length > 0) {
