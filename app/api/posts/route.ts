@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { createPostSchema } from "@/lib/validations";
-import { Post } from "@/types";
-import { getPosts } from "@/lib/data/posts";
+import { getAllPosts, createPost } from "@/services/postService";
 import { 
   successResponse, 
   createdResponse, 
@@ -13,7 +11,7 @@ import {
 
 // GET /api/posts - Retrieve all posts
 export const GET = withErrorHandling(async () => {
-  const posts = await getPosts();
+  const posts = await getAllPosts();
   return successResponse(posts);
 });
 
@@ -22,41 +20,22 @@ export const POST = withErrorHandling(
   withRequestValidation(
     createPostSchema,
     async (_: NextRequest, validatedData) => {
-    const { title, body: postBody, userId } = validatedData;
+      const { title, body: postBody, userId } = validatedData;
 
-    // Check if user exists
-    const userExists = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!userExists) {
-      return notFoundResponse("User not found");
-    }
-
-    // Create the post
-    const newPost = await prisma.post.create({
-      data: {
+      const result = await createPost({
         title,
         body: postBody,
         userId,
-      },
-      include: {
-        user: true,
-      },
-    });
+      });
 
-    // Transform the response
-    const transformedPost: Post = {
-      id: newPost.id,
-      title: newPost.title,
-      body: newPost.body,
-      userId: newPost.userId,
-      user: newPost.user,
-      createdAt: newPost.createdAt,
-      updatedAt: newPost.updatedAt,
-    };
+      if (!result.success) {
+        if (result.statusCode === 404) {
+          return notFoundResponse(result.error);
+        }
+        throw new Error(result.error);
+      }
 
-    return createdResponse(transformedPost, "Post created successfully");
+      return createdResponse(result.data, "Post created successfully");
     }
   )
 );

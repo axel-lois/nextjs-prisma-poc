@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { updatePostSchema } from "@/lib/validations";
-import { Post } from "@/types";
+import { getPostById, updatePost, deletePost } from "@/services/postService";
 import { 
   successResponse, 
   badRequestResponse,
@@ -26,27 +25,13 @@ export const GET = withErrorHandling(
       return badRequestResponse("Invalid post ID");
     }
 
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      include: { user: true },
-    });
+    const post = await getPostById(postId);
 
     if (!post) {
       return notFoundResponse("Post not found");
     }
 
-    // Transform the response
-    const transformedPost: Post = {
-      id: post.id,
-      title: post.title,
-      body: post.body,
-      userId: post.userId,
-      user: post.user,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-    };
-
-    return successResponse(transformedPost);
+    return successResponse(post);
   }
 );
 
@@ -55,47 +40,29 @@ export const PATCH = withErrorHandling(
   withRequestValidation(
     updatePostSchema,
     async (_: NextRequest, validatedData, context?: RouteContext) => {
-    if (!context?.params) {
-      return badRequestResponse("Missing route parameters");
-    }
-    const resolvedParams = await context.params;
-    const postId = validatePathParam(resolvedParams.id);
+      if (!context?.params) {
+        return badRequestResponse("Missing route parameters");
+      }
+      const resolvedParams = await context.params;
+      const postId = validatePathParam(resolvedParams.id);
 
-    if (postId === null) {
-      return badRequestResponse("Invalid post ID");
-    }
+      if (postId === null) {
+        return badRequestResponse("Invalid post ID");
+      }
 
-    // Check if post exists
-    const existingPost = await prisma.post.findUnique({
-      where: { id: postId },
-    });
-
-    if (!existingPost) {
-      return notFoundResponse("Post not found");
-    }
-
-    // Update the post
-    const updatedPost = await prisma.post.update({
-      where: { id: postId },
-      data: {
+      const result = await updatePost(postId, {
         ...(validatedData.title && { title: validatedData.title }),
         ...(validatedData.body && { body: validatedData.body }),
-      },
-      include: { user: true },
-    });
+      });
 
-    // Transform the response
-    const transformedPost: Post = {
-      id: updatedPost.id,
-      title: updatedPost.title,
-      body: updatedPost.body,
-      userId: updatedPost.userId,
-      user: updatedPost.user,
-      createdAt: updatedPost.createdAt,
-      updatedAt: updatedPost.updatedAt,
-    };
+      if (!result.success) {
+        if (result.statusCode === 404) {
+          return notFoundResponse(result.error);
+        }
+        throw new Error(result.error);
+      }
 
-    return successResponse(transformedPost, "Post updated successfully");
+      return successResponse(result.data, "Post updated successfully");
     }
   )
 );
@@ -113,19 +80,14 @@ export const DELETE = withErrorHandling(
       return badRequestResponse("Invalid post ID");
     }
 
-    // Check if post exists
-    const existingPost = await prisma.post.findUnique({
-      where: { id: postId },
-    });
+    const result = await deletePost(postId);
 
-    if (!existingPost) {
-      return notFoundResponse("Post not found");
+    if (!result.success) {
+      if (result.statusCode === 404) {
+        return notFoundResponse(result.error);
+      }
+      throw new Error(result.error);
     }
-
-    // Delete the post
-    await prisma.post.delete({
-      where: { id: postId },
-    });
 
     return noContentResponse("Post deleted successfully");
   }
