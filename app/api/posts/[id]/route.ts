@@ -1,18 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { updatePostSchema, validateInput } from "@/lib/validations";
+import { updatePostSchema } from "@/lib/validations";
 import { Post } from "@/types";
+import { 
+  successResponse, 
+  badRequestResponse,
+  notFoundResponse,
+  noContentResponse,
+  validatePathParam,
+  withRequestValidation,
+  withErrorHandling,
+  RouteContext
+} from "@/lib/middleware";
 
 // GET /api/posts/[id] - Get a single post
-export async function GET(
-  _: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const postId = parseInt(params.id, 10);
+export const GET = withErrorHandling(
+  async (_: NextRequest, context?: RouteContext) => {
+    if (!context?.params) {
+      return badRequestResponse("Missing route parameters");
+    }
+    const resolvedParams = await context.params;
+    const postId = validatePathParam(resolvedParams.id);
 
-    if (isNaN(postId)) {
-      return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
+    if (postId === null) {
+      return badRequestResponse("Invalid post ID");
     }
 
     const post = await prisma.post.findUnique({
@@ -21,7 +32,7 @@ export async function GET(
     });
 
     if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return notFoundResponse("Post not found");
     }
 
     // Transform the response
@@ -35,41 +46,24 @@ export async function GET(
       updatedAt: post.updatedAt,
     };
 
-    return NextResponse.json({ data: transformedPost });
-  } catch (error) {
-    console.error("Error fetching post:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch post" },
-      { status: 500 }
-    );
+    return successResponse(transformedPost);
   }
-}
+);
 
 // PATCH /api/posts/[id] - Update a post
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const postId = parseInt(params.id, 10);
-
-    if (isNaN(postId)) {
-      return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
+export const PATCH = withErrorHandling(
+  withRequestValidation(
+    updatePostSchema,
+    async (_: NextRequest, validatedData, context?: RouteContext) => {
+    if (!context?.params) {
+      return badRequestResponse("Missing route parameters");
     }
+    const resolvedParams = await context.params;
+    const postId = validatePathParam(resolvedParams.id);
 
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = validateInput(updatePostSchema, body);
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: validationResult.error },
-        { status: 400 }
-      );
+    if (postId === null) {
+      return badRequestResponse("Invalid post ID");
     }
-
-    const updateData = validationResult.data;
 
     // Check if post exists
     const existingPost = await prisma.post.findUnique({
@@ -77,15 +71,15 @@ export async function PATCH(
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return notFoundResponse("Post not found");
     }
 
     // Update the post
     const updatedPost = await prisma.post.update({
       where: { id: postId },
       data: {
-        ...(updateData.title && { title: updateData.title }),
-        ...(updateData.body && { body: updateData.body }),
+        ...(validatedData.title && { title: validatedData.title }),
+        ...(validatedData.body && { body: validatedData.body }),
       },
       include: { user: true },
     });
@@ -101,29 +95,22 @@ export async function PATCH(
       updatedAt: updatedPost.updatedAt,
     };
 
-    return NextResponse.json({
-      data: transformedPost,
-      message: "Post updated successfully",
-    });
-  } catch (error) {
-    console.error("Error updating post:", error);
-    return NextResponse.json(
-      { error: "Failed to update post" },
-      { status: 500 }
-    );
-  }
-}
+    return successResponse(transformedPost, "Post updated successfully");
+    }
+  )
+);
 
 // DELETE /api/posts/[id] - Delete a post
-export async function DELETE(
-  _: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const postId = parseInt(params.id, 10);
+export const DELETE = withErrorHandling(
+  async (_: NextRequest, context?: RouteContext) => {
+    if (!context?.params) {
+      return badRequestResponse("Missing route parameters");
+    }
+    const resolvedParams = await context.params;
+    const postId = validatePathParam(resolvedParams.id);
 
-    if (isNaN(postId)) {
-      return NextResponse.json({ error: "Invalid post ID" }, { status: 400 });
+    if (postId === null) {
+      return badRequestResponse("Invalid post ID");
     }
 
     // Check if post exists
@@ -132,7 +119,7 @@ export async function DELETE(
     });
 
     if (!existingPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return notFoundResponse("Post not found");
     }
 
     // Delete the post
@@ -140,14 +127,6 @@ export async function DELETE(
       where: { id: postId },
     });
 
-    return NextResponse.json({
-      message: "Post deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting post:", error);
-    return NextResponse.json(
-      { error: "Failed to delete post" },
-      { status: 500 }
-    );
+    return noContentResponse("Post deleted successfully");
   }
-}
+);

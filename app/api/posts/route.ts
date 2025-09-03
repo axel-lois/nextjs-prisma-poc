@@ -1,42 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import {
-  createPostSchema,
-  validateInput,
-} from "@/lib/validations";
+import { createPostSchema } from "@/lib/validations";
 import { Post } from "@/types";
 import { getPosts } from "@/lib/data/posts";
+import { 
+  successResponse, 
+  createdResponse, 
+  notFoundResponse,
+  withRequestValidation,
+  withErrorHandling
+} from "@/lib/middleware";
 
 // GET /api/posts - Retrieve all posts
-export async function GET() {
-  try {
-    const posts = await getPosts();
-    return NextResponse.json({ data: posts });
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch posts" },
-      { status: 500 }
-    );
-  }
-}
+export const GET = withErrorHandling(async () => {
+  const posts = await getPosts();
+  return successResponse(posts);
+});
 
-// POST /api/posts - Create a new post
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = validateInput(createPostSchema, body);
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: validationResult.error },
-        { status: 400 }
-      );
-    }
-
-    const { title, body: postBody, userId } = validationResult.data;
+// POST /api/posts - Create a new post (using explicit composition)
+export const POST = withErrorHandling(
+  withRequestValidation(
+    createPostSchema,
+    async (_: NextRequest, validatedData) => {
+    const { title, body: postBody, userId } = validatedData;
 
     // Check if user exists
     const userExists = await prisma.user.findUnique({
@@ -44,7 +30,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userExists) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return notFoundResponse("User not found");
     }
 
     // Create the post
@@ -70,12 +56,7 @@ export async function POST(request: NextRequest) {
       updatedAt: newPost.updatedAt,
     };
 
-    return NextResponse.json(
-      { data: transformedPost, message: "Post created successfully" },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Error creating post:", error);
-    return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
-  }
-}
+    return createdResponse(transformedPost, "Post created successfully");
+    }
+  )
+);
